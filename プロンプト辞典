@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>画像生成プロンプト辞典</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #10101a;
+    --bg3: #16162a;
+    --card: #1a1a2e;
+    --card-hover: #1f1f3a;
+    --border: rgba(120, 100, 255, 0.2);
+    --border-hover: rgba(120, 100, 255, 0.5);
+    --accent: #7b5cfa;
+    --accent2: #e040fb;
+    --accent3: #00e5ff;
+    --accent4: #ff6b6b;
+    --text: #e8e8f0;
+    --text2: #9090b8;
+    --text3: #5f5f8f;
+    --tag-bg: rgba(123, 92, 250, 0.12);
+    --glow: 0 0 30px rgba(123, 92, 250, 0.15);
+    --glow-strong: 0 0 50px rgba(123, 92, 250, 0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ノイズテクスチャ */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* メッシュグラデーション背景 */
+  .mesh-bg {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .mesh-bg::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(123,92,250,0.08) 0%, transparent 70%);
+    top: -200px; left: -200px;
+    animation: drift1 20s ease-in-out infinite;
+  }
+  .mesh-bg::after {
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(224,64,251,0.06) 0%, transparent 70%);
+    bottom: -100px; right: -100px;
+    animation: drift2 25s ease-in-out infinite;
+  }
+  @keyframes drift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(80px,60px)} }
+  @keyframes drift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-60px,-80px)} }
+
+  /* ヘッダー */
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 48px 40px 32px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(10,10,15,0.98) 0%, rgba(10,10,15,0.8) 100%);
+    backdrop-filter: blur(12px);
+  }
+
+  .header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-end;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  .logo-area { flex: 1; min-width: 280px; }
+
+  .logo-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.8;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 0%, #c8b8ff 50%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .stat {
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    margin-top: 2px;
+  }
+  .stat-divider { width: 1px; height: 40px; background: var(--border); }
+
+  /* コントロールバー */
+  .controls {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(10,10,15,0.9);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 40px;
+  }
+
+  .controls-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 240px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+    font-size: 15px;
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px 10px 40px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(123,92,250,0.15);
+  }
+  .search-input::placeholder { color: var(--text3); }
+
+  .sort-select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .sort-select:focus { border-color: var(--accent); }
+
+  .shuffle-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: linear-gradient(135deg, rgba(123,92,250,0.2), rgba(224,64,251,0.15));
+    border: 1px solid rgba(123,92,250,0.4);
+    border-radius: 10px;
+    padding: 10px 16px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .shuffle-btn:hover {
+    background: linear-gradient(135deg, rgba(123,92,250,0.4), rgba(224,64,251,0.3));
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(123,92,250,0.3);
+    transform: translateY(-1px);
+  }
+  .shuffle-btn .shuffle-icon {
+    display: inline-block;
+    font-size: 15px;
+    transition: transform 0.5s ease;
+  }
+  .shuffle-btn:hover .shuffle-icon { transform: rotate(180deg); }
+
+  /* シャッフルモーダル */
+  .shuffle-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .shuffle-overlay.show { opacity: 1; pointer-events: all; }
+
+  .shuffle-modal {
+    background: var(--bg2);
+    border: 1px solid var(--border-hover);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 0 80px rgba(123,92,250,0.25);
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+  .shuffle-overlay.show .shuffle-modal { transform: translateY(0) scale(1); }
+
+  .shuffle-modal-header {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    background: var(--bg2);
+    border-radius: 20px 20px 0 0;
+    z-index: 1;
+  }
+  .shuffle-modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff, #c8b8ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .shuffle-modal-close {
+    width: 32px; height: 32px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text3);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .shuffle-modal-close:hover { background: var(--accent4); border-color: var(--accent4); color: white; }
+
+  .shuffle-modal-controls {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .shuffle-count-label {
+    font-size: 13px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  .shuffle-count-input {
+    width: 64px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    text-align: center;
+    outline: none;
+  }
+  .shuffle-count-input:focus { border-color: var(--accent); }
+
+  .shuffle-genre-filter {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+  .shuffle-genre-chip {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .shuffle-genre-chip.active {
+    background: var(--tag-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .shuffle-reroll-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 10px;
+    padding: 9px 18px;
+    color: white;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .shuffle-reroll-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+  .shuffle-reroll-btn .spin { display: inline-block; }
+  .shuffle-reroll-btn.spinning .spin { animation: spinOnce 0.4s ease; }
+  @keyframes spinOnce { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+  .shuffle-modal-body { padding: 20px 24px; }
+
+  .shuffle-result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .shuffle-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    animation: shuffleIn 0.3s ease backwards;
+    position: relative;
+  }
+  @keyframes shuffleIn {
+    from { opacity:0; transform: translateY(10px) rotate(-1deg); }
+    to   { opacity:1; transform: translateY(0) rotate(0); }
+  }
+  .shuffle-card-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .shuffle-card-jp {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 10px;
+  }
+  .shuffle-card-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .shuffle-card-add {
+    flex: 1;
+    background: var(--tag-bg);
+    border: 1px solid rgba(123,92,250,0.3);
+    border-radius: 7px;
+    color: var(--accent);
+    font-size: 12px;
+    padding: 5px 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .shuffle-card-add:hover { background: var(--accent); border-color: var(--accent); color: white; }
+  .shuffle-card-add.added { background: rgba(34,197,94,0.15); border-color: #22c55e; color: #22c55e; }
+
+  .shuffle-card-copy {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text3);
+    font-size: 12px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .shuffle-card-copy:hover { background: var(--accent); border-color: var(--accent); color: white; }
+
+  .shuffle-modal-footer {
+    padding: 16px 24px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .shuffle-all-add {
+    flex: 1;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 11px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .shuffle-all-add:hover { opacity: 0.85; transform: translateY(-1px); }
+  .shuffle-all-copy {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text2);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    padding: 11px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .shuffle-all-copy:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ジャンルタブ */
+  .genre-bar {
+    position: relative;
+    z-index: 10;
+    padding: 16px 40px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .genre-bar::-webkit-scrollbar { display: none; }
+
+  .genre-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .genre-btn {
+    flex-shrink: 0;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 16px;
+    color: var(--text2);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .genre-btn .genre-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text3);
+    transition: background 0.2s;
+  }
+  .genre-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .genre-btn.active {
+    background: var(--tag-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .genre-btn.active .genre-dot { background: var(--accent); }
+
+  /* メインコンテンツ */
+  .main {
+    position: relative;
+    z-index: 5;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 40px 60px;
+  }
+
+  /* 結果カウント */
+  .result-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .result-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text3);
+  }
+  .result-count span { color: var(--accent); font-weight: 600; }
+
+  .view-toggle {
+    display: flex;
+    gap: 4px;
+  }
+  .view-btn {
+    width: 32px; height: 32px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text3);
+    transition: all 0.2s;
+    font-size: 14px;
+  }
+  .view-btn.active, .view-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* グリッド */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  .grid.list-view {
+    grid-template-columns: 1fr;
+  }
+
+  /* カード */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+    animation: fadeIn 0.4s ease backwards;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(123,92,250,0.04) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .card:hover {
+    background: var(--card-hover);
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--glow);
+  }
+  .card:hover::before { opacity: 1; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .genre-badge {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+    flex-shrink: 0;
+  }
+
+  .copy-btn {
+    width: 28px; height: 28px;
+    background: rgba(123,92,250,0.1);
+    border: 1px solid rgba(123,92,250,0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text3);
+    transition: all 0.2s;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .copy-btn:hover { background: var(--accent); border-color: var(--accent); color: white; }
+  .copy-btn.copied { background: #22c55e; border-color: #22c55e; color: white; }
+
+  .card-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    word-break: break-all;
+  }
+
+  .card-jp {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 12px;
+  }
+
+  .card-desc {
+    font-size: 12px;
+    color: var(--text3);
+    line-height: 1.6;
+    margin-bottom: 14px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .strength-bar {
+    flex: 1;
+    height: 3px;
+    background: var(--bg2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  .strength-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    white-space: nowrap;
+  }
+
+  /* リストビュー */
+  .list-view .card {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+  }
+  .list-view .card-top { margin: 0; }
+  .list-view .card-desc { display: none; }
+  .list-view .card-meta { justify-content: flex-end; }
+  .list-view .card-jp { margin: 0; }
+
+  /* 空状態 */
+  .empty-state {
+    text-align: center;
+    padding: 80px 40px;
+    color: var(--text3);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+  .empty-text { font-size: 15px; }
+
+  /* トースト */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--bg3);
+    border: 1px solid #22c55e;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: #22c55e;
+    z-index: 999;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ジャンルカラー定義 */
+  .g-style { color: #a78bfa; border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+  .g-quality { color: #34d399; border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.08); }
+  .g-lighting { color: #fbbf24; border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.08); }
+  .g-camera { color: #60a5fa; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.08); }
+  .g-character { color: #f87171; border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.08); }
+  .g-environment { color: #4ade80; border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+  .g-mood { color: #e879f9; border-color: rgba(232,121,249,0.3); background: rgba(232,121,249,0.08); }
+  .g-technique { color: #fb923c; border-color: rgba(251,146,60,0.3); background: rgba(251,146,60,0.08); }
+  .g-artist { color: #38bdf8; border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+  .g-negative { color: #94a3b8; border-color: rgba(148,163,184,0.3); background: rgba(148,163,184,0.08); }
+  .g-eyes      { color: #67e8f9; border-color: rgba(103,232,249,0.3); background: rgba(103,232,249,0.08); }
+  .g-hair      { color: #d8b4fe; border-color: rgba(216,180,254,0.3); background: rgba(216,180,254,0.08); }
+  .g-expression{ color: #fca5a5; border-color: rgba(252,165,165,0.3); background: rgba(252,165,165,0.08); }
+  .g-makeup    { color: #f9a8d4; border-color: rgba(249,168,212,0.3); background: rgba(249,168,212,0.08); }
+  .g-outfit    { color: #86efac; border-color: rgba(134,239,172,0.3); background: rgba(134,239,172,0.08); }
+
+  .str-high { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .str-mid { background: linear-gradient(90deg, var(--accent3), #00bcd4); }
+  .str-low { background: linear-gradient(90deg, var(--text3), #7090b8); }
+
+  /* アクセサリーライン */
+  .section-line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .section-line-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .section-line-rule {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  @media (max-width: 700px) {
+    header, .controls, .genre-bar { padding-left: 16px; padding-right: 16px; }
+    .main { padding: 16px 16px 60px; }
+    .grid { grid-template-columns: 1fr; }
+    h1 { font-size: 24px; }
+    .list-view .card { grid-template-columns: 1fr; }
+  }
+
+  /* ─── マイリスト ─── */
+  .mylist-panel {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 100;
+    transform: translateY(calc(100% - 52px));
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .mylist-panel.open { transform: translateY(0); }
+
+  .mylist-handle {
+    background: var(--bg3);
+    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-radius: 14px 14px 0 0;
+    padding: 0 20px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    flex-shrink: 0;
+    gap: 12px;
+    user-select: none;
+  }
+  .mylist-handle:hover { background: var(--card-hover); }
+
+  .mylist-handle-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .mylist-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.05em;
+  }
+  .mylist-count-badge {
+    background: var(--accent);
+    color: white;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 2px 8px;
+    min-width: 22px;
+    text-align: center;
+    transition: transform 0.2s;
+  }
+  .mylist-count-badge.bump { transform: scale(1.3); }
+
+  .mylist-handle-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mylist-action-btn {
+    background: rgba(123,92,250,0.12);
+    border: 1px solid rgba(123,92,250,0.25);
+    border-radius: 7px;
+    color: var(--text2);
+    font-size: 12px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .mylist-action-btn:hover { background: var(--accent); border-color: var(--accent); color: white; }
+  .mylist-action-btn.danger:hover { background: var(--accent4); border-color: var(--accent4); }
+
+  .mylist-chevron {
+    color: var(--text3);
+    font-size: 14px;
+    transition: transform 0.3s;
+  }
+  .mylist-panel.open .mylist-chevron { transform: rotate(180deg); }
+
+  .mylist-body {
+    background: rgba(10,10,15,0.97);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    overflow-y: auto;
+    flex: 1;
+    padding: 16px 20px 20px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
+  }
+
+  .mylist-empty {
+    text-align: center;
+    padding: 32px 0;
+    color: var(--text3);
+    font-size: 13px;
+  }
+  .mylist-empty-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.3; }
+
+  .mylist-prompt-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.7;
+    word-break: break-all;
+    margin-bottom: 14px;
+    min-height: 40px;
+  }
+  .mylist-prompt-box .prompt-tag {
+    display: inline;
+    color: var(--accent);
+  }
+  .mylist-prompt-box .prompt-comma {
+    color: var(--text3);
+  }
+
+  .mylist-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .mylist-tag-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--tag-bg);
+    border: 1px solid rgba(123,92,250,0.25);
+    border-radius: 20px;
+    padding: 5px 10px 5px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    animation: chipIn 0.2s ease backwards;
+  }
+  @keyframes chipIn {
+    from { opacity:0; transform: scale(0.8); }
+    to   { opacity:1; transform: scale(1); }
+  }
+  .chip-remove {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    transition: color 0.15s;
+    display: flex;
+    align-items: center;
+  }
+  .chip-remove:hover { color: var(--accent4); }
+
+  /* カードの追加ボタン */
+  .add-btn {
+    width: 28px; height: 28px;
+    background: rgba(123,92,250,0.1);
+    border: 1px solid rgba(123,92,250,0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text3);
+    transition: all 0.2s;
+    font-size: 16px;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .add-btn:hover { background: var(--accent); border-color: var(--accent); color: white; }
+  .add-btn.added { background: rgba(34,197,94,0.15); border-color: #22c55e; color: #22c55e; }
+
+  .card-buttons { display: flex; gap: 6px; }
+</style>
+</head>
+<body>
+
+<div class="mesh-bg"></div>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-area">
+      <div class="logo-eyebrow">// IMAGE GENERATION PROMPT</div>
+      <h1>プロンプト辞典</h1>
+    </div>
+    <div class="header-stats">
+      <div class="stat">
+        <div class="stat-num" id="totalCount">0</div>
+        <div class="stat-label">タグ数</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-num" id="genreCount">0</div>
+        <div class="stat-label">ジャンル</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="controls-inner">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input class="search-input" type="text" id="searchInput" placeholder="タグ・和訳・説明で検索...">
+    </div>
+    <select class="sort-select" id="sortSelect">
+      <option value="default">デフォルト順</option>
+      <option value="az">A → Z</option>
+      <option value="za">Z → A</option>
+      <option value="jp">和訳順（あいうえお）</option>
+      <option value="strength">効果強度順</option>
+      <option value="genre">ジャンル順</option>
+    </select>
+    <button class="shuffle-btn" id="shuffleOpenBtn">
+      <span class="shuffle-icon">⇄</span> シャッフル
+    </button>
+  </div>
+</div>
+
+<div class="genre-bar">
+  <div class="genre-inner" id="genreBar"></div>
+</div>
+
+<main class="main">
+  <div class="result-info">
+    <div class="result-count">表示中: <span id="resultNum">0</span> 件</div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="gridViewBtn" title="グリッド表示">⊞</button>
+      <button class="view-btn" id="listViewBtn" title="リスト表示">≡</button>
+    </div>
+  </div>
+  <div class="section-line">
+    <span class="section-line-text">DICTIONARY</span>
+    <span class="section-line-rule"></span>
+  </div>
+  <div class="grid" id="grid"></div>
+</main>
+
+<!-- シャッフルモーダル -->
+<div class="shuffle-overlay" id="shuffleOverlay">
+  <div class="shuffle-modal" id="shuffleModal">
+    <div class="shuffle-modal-header">
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:0.2em;margin-bottom:4px;">// RANDOM GENERATOR</div>
+        <div class="shuffle-modal-title">シャッフル ✦</div>
+      </div>
+      <button class="shuffle-modal-close" id="shuffleCloseBtn">×</button>
+    </div>
+    <div class="shuffle-modal-controls">
+      <span class="shuffle-count-label">枚数</span>
+      <input class="shuffle-count-input" type="number" id="shuffleCountInput" value="5" min="1" max="20">
+      <div class="shuffle-genre-filter" id="shuffleGenreFilter"></div>
+      <button class="shuffle-reroll-btn" id="shuffleRerollBtn">
+        <span class="spin">⟳</span> 再シャッフル
+      </button>
+    </div>
+    <div class="shuffle-modal-body">
+      <div class="shuffle-result-grid" id="shuffleResultGrid"></div>
+    </div>
+    <div class="shuffle-modal-footer">
+      <button class="shuffle-all-add" id="shuffleAllAddBtn">✦ 全部マイリストに追加</button>
+      <button class="shuffle-all-copy" id="shuffleAllCopyBtn">📋 全部コピー</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ コピーしました</div>
+
+<!-- マイリストパネル -->
+<div class="mylist-panel" id="mylistPanel">
+  <div class="mylist-handle" id="mylistHandle">
+    <div class="mylist-handle-left">
+      <span style="font-size:16px">✦</span>
+      <span class="mylist-title">マイリスト</span>
+      <span class="mylist-count-badge" id="mylistBadge">0</span>
+    </div>
+    <div class="mylist-handle-right">
+      <button class="mylist-action-btn" onclick="copyAllTags(event)">📋 全コピー</button>
+      <button class="mylist-action-btn danger" onclick="clearMylist(event)">🗑 クリア</button>
+      <span class="mylist-chevron" id="mylistChevron">▲</span>
+    </div>
+  </div>
+  <div class="mylist-body" id="mylistBody">
+    <div class="mylist-empty" id="mylistEmpty">
+      <div class="mylist-empty-icon">✦</div>
+      カードの ＋ ボタンでタグを追加しよう
+    </div>
+    <div class="mylist-prompt-box" id="mylistPromptBox" style="display:none"></div>
+    <div class="mylist-tags" id="mylistTags"></div>
+  </div>
+</div>
+
+<script>
+const GENRES = {
+  style:       { label: 'スタイル',     cls: 'g-style',       icon: '✦' },
+  quality:     { label: 'クオリティ',   cls: 'g-quality',     icon: '★' },
+  lighting:    { label: 'ライティング', cls: 'g-lighting',    icon: '☀' },
+  camera:      { label: 'カメラ',       cls: 'g-camera',      icon: '⬡' },
+  character:   { label: 'キャラクター', cls: 'g-character',   icon: '♟' },
+  environment: { label: '背景・環境',   cls: 'g-environment', icon: '⬢' },
+  mood:        { label: 'ムード',       cls: 'g-mood',        icon: '✿' },
+  technique:   { label: 'テクニック',   cls: 'g-technique',   icon: '⚙' },
+  artist:      { label: 'アーティスト', cls: 'g-artist',      icon: '⬡' },
+  negative:    { label: 'ネガティブ',   cls: 'g-negative',    icon: '⊖' },
+  eyes:        { label: '瞳・目',       cls: 'g-eyes',        icon: '◉' },
+  hair:        { label: '髪',           cls: 'g-hair',        icon: '≋' },
+  expression:  { label: '表情',         cls: 'g-expression',  icon: '❋' },
+  makeup:      { label: 'メイク',       cls: 'g-makeup',      icon: '✧' },
+  outfit:      { label: '服装',         cls: 'g-outfit',      icon: '◈' },
+};
+
+const DATA = [
+  // ── クオリティ ──
+  { tag:'masterpiece', jp:'傑作', genre:'quality', strength:5, desc:'全体的なクオリティを引き上げる定番タグ。Stable Diffusionで特に有効。' },
+  { tag:'best quality', jp:'最高品質', genre:'quality', strength:5, desc:'高解像度かつ精細な出力を促す。masterpiece と併用されることが多い。' },
+  { tag:'ultra-detailed', jp:'超精細', genre:'quality', strength:4, desc:'細部の描写を極限まで高める。建築物や機械などに特に効果的。' },
+  { tag:'8k uhd', jp:'8K超高解像度', genre:'quality', strength:4, desc:'実写系プロンプトに高解像感を与えるタグ。' },
+  { tag:'photorealistic', jp:'超写実的', genre:'quality', strength:5, desc:'写真と見紛うレベルのリアリティを指示する。' },
+  { tag:'hyperrealistic', jp:'ハイパーリアル', genre:'quality', strength:5, desc:'photorealistic をさらに超えた極限のリアル表現。' },
+  { tag:'sharp focus', jp:'シャープな焦点', genre:'quality', strength:3, desc:'ボケを排除し、被写体をくっきり描写させる。' },
+  { tag:'high resolution', jp:'高解像度', genre:'quality', strength:3, desc:'基本的な高解像度指定タグ。' },
+
+  // ── スタイル ──
+  { tag:'anime style', jp:'アニメスタイル', genre:'style', strength:4, desc:'日本のアニメーション風の絵柄を指示。' },
+  { tag:'oil painting', jp:'油絵', genre:'style', strength:4, desc:'古典的な西洋油絵のテクスチャと筆致を再現。' },
+  { tag:'watercolor', jp:'水彩画', genre:'style', strength:4, desc:'にじみや透明感のある水彩画タッチ。' },
+  { tag:'digital art', jp:'デジタルアート', genre:'style', strength:3, desc:'現代的なデジタルイラスト全般を指す汎用タグ。' },
+  { tag:'concept art', jp:'コンセプトアート', genre:'style', strength:4, desc:'ゲーム・映画の設定デザイン画のような質感。' },
+  { tag:'pixel art', jp:'ピクセルアート', genre:'style', strength:5, desc:'レトロゲーム風のドット絵スタイル。' },
+  { tag:'pencil sketch', jp:'鉛筆スケッチ', genre:'style', strength:4, desc:'鉛筆で描いたような線画・スケッチ表現。' },
+  { tag:'cinematic', jp:'映画的', genre:'style', strength:4, desc:'映画のワンシーンのような構図・色調・雰囲気。' },
+  { tag:'illustration', jp:'イラスト', genre:'style', strength:3, desc:'一般的なイラストレーション表現を指示。' },
+  { tag:'flat design', jp:'フラットデザイン', genre:'style', strength:4, desc:'シンプルで影のない現代的なグラフィックスタイル。' },
+  { tag:'stained glass', jp:'ステンドグラス', genre:'style', strength:5, desc:'色ガラスを組み合わせた美しい光の表現。' },
+  { tag:'comic book style', jp:'コミック風', genre:'style', strength:4, desc:'アメコミのような大胆な線と色使い。' },
+  { tag:'impressionism', jp:'印象派', genre:'style', strength:4, desc:'モネなど印象派絵画の筆触と光の表現。' },
+  { tag:'low poly', jp:'ローポリ', genre:'style', strength:5, desc:'3Dの多面体ポリゴンを使ったミニマルなスタイル。' },
+
+  // ── ライティング ──
+  { tag:'golden hour', jp:'ゴールデンアワー', genre:'lighting', strength:5, desc:'日の出・日没直後の暖かいオレンジ色の光。ドラマチックな影を生む。' },
+  { tag:'volumetric lighting', jp:'ボリューメトリックライト', genre:'lighting', strength:5, desc:'光が空気中で散乱する、霧や塵の中に見えるような光線表現。' },
+  { tag:'cinematic lighting', jp:'映画的照明', genre:'lighting', strength:4, desc:'映画撮影のような計算された光と影のコントラスト。' },
+  { tag:'soft lighting', jp:'柔らかい光', genre:'lighting', strength:3, desc:'影が滑らかで目に優しい自然な照明効果。' },
+  { tag:'dramatic lighting', jp:'ドラマチック照明', genre:'lighting', strength:4, desc:'強い明暗のコントラストで緊張感を演出する照明。' },
+  { tag:'neon lights', jp:'ネオンライト', genre:'lighting', strength:5, desc:'サイバーパンク系によく使われる鮮やかな蛍光色の照明。' },
+  { tag:'backlit', jp:'逆光', genre:'lighting', strength:4, desc:'被写体の後ろから光が当たり、シルエットや輪郭光を生む。' },
+  { tag:'ambient occlusion', jp:'環境遮蔽', genre:'lighting', strength:3, desc:'物体の隙間や角に自然なシャドウを追加し立体感を増す。' },
+  { tag:'studio lighting', jp:'スタジオライト', genre:'lighting', strength:4, desc:'プロ写真スタジオのような均一で洗練された照明。' },
+  { tag:'moonlight', jp:'月明かり', genre:'lighting', strength:3, desc:'夜の柔らかく青白い月の光。幻想的な雰囲気を演出。' },
+
+  // ── カメラ ──
+  { tag:'close-up shot', jp:'クローズアップ', genre:'camera', strength:4, desc:'被写体に近づいた寄りのショット。表情や細部を強調。' },
+  { tag:'wide angle', jp:'広角', genre:'camera', strength:3, desc:'広い視野角で空間の広がりを表現。' },
+  { tag:'aerial view', jp:'空撮視点', genre:'camera', strength:4, desc:'真上または斜め上から見下ろした俯瞰構図。' },
+  { tag:'bokeh', jp:'ボケ', genre:'camera', strength:4, desc:'背景を美しくぼかした被写界深度の浅い描写。' },
+  { tag:'fisheye lens', jp:'魚眼レンズ', genre:'camera', strength:5, desc:'丸く歪んだ超広角の魚眼レンズ効果。' },
+  { tag:'long exposure', jp:'長時間露光', genre:'camera', strength:4, desc:'動くものがブレる幻想的な長時間露光表現。' },
+  { tag:'macro photography', jp:'マクロ撮影', genre:'camera', strength:4, desc:'虫や花など小さなものを超拡大して撮影したような表現。' },
+  { tag:'portrait', jp:'ポートレート', genre:'camera', strength:3, desc:'人物を中心に据えた顔・上半身重点の構図。' },
+  { tag:'dutch angle', jp:'斜め構図', genre:'camera', strength:4, desc:'カメラを傾けた不安定感・緊張感を演出する構図。' },
+
+  // ── キャラクター ──
+  { tag:'beautiful woman', jp:'美しい女性', genre:'character', strength:3, desc:'一般的な美しい女性キャラクターを生成する基本タグ。' },
+  { tag:'muscular', jp:'筋肉質', genre:'character', strength:4, desc:'発達した筋肉を持つ体型を描写させる。' },
+  { tag:'elegant', jp:'エレガント', genre:'character', strength:3, desc:'上品で洗練された雰囲気のキャラクター描写。' },
+  { tag:'smiling', jp:'笑顔', genre:'character', strength:3, desc:'表情に笑みを浮かべさせる。' },
+  { tag:'intricate hair', jp:'複雑な髪型', genre:'character', strength:3, desc:'編み込みなど複雑な髪の描写を促す。' },
+  { tag:'full body', jp:'全身', genre:'character', strength:4, desc:'キャラクターを頭からつま先まで全身描写させる。' },
+  { tag:'cyborg', jp:'サイボーグ', genre:'character', strength:5, desc:'人体と機械が融合したサイボーグキャラクター。' },
+  { tag:'fantasy character', jp:'ファンタジーキャラ', genre:'character', strength:3, desc:'魔法使い・エルフ・騎士などファンタジー系の人物。' },
+
+  // ── 背景・環境 ──
+  { tag:'cyberpunk city', jp:'サイバーパンク都市', genre:'environment', strength:5, desc:'未来的なネオン街のサイバーパンク世界観。' },
+  { tag:'enchanted forest', jp:'魔法の森', genre:'environment', strength:4, desc:'光の差し込む神秘的な森の情景。' },
+  { tag:'futuristic interior', jp:'未来的な内装', genre:'environment', strength:4, desc:'SF映画に出てきそうなハイテク空間の描写。' },
+  { tag:'abandoned ruins', jp:'廃墟', genre:'environment', strength:4, desc:'苔や植物に覆われた退廃的な廃墟。' },
+  { tag:'underwater world', jp:'水中世界', genre:'environment', strength:5, desc:'珊瑚・光・水流が幻想的な深海・水中の情景。' },
+  { tag:'snow landscape', jp:'雪景色', genre:'environment', strength:3, desc:'一面の雪に覆われた静寂な冬景色。' },
+  { tag:'japanese garden', jp:'日本庭園', genre:'environment', strength:4, desc:'石畳・池・松・灯籠のある伝統的な日本庭園。' },
+  { tag:'outer space', jp:'宇宙空間', genre:'environment', strength:4, desc:'星雲・惑星・星々が広がる壮大な宇宙の情景。' },
+  { tag:'ancient temple', jp:'古代神殿', genre:'environment', strength:4, desc:'歴史を感じる石造りの古代遺跡・神殿。' },
+
+  // ── ムード ──
+  { tag:'dark atmosphere', jp:'ダークな雰囲気', genre:'mood', strength:4, desc:'陰鬱で不気味な暗い雰囲気を全体に漂わせる。' },
+  { tag:'ethereal', jp:'幽玄・幻想的', genre:'mood', strength:4, desc:'この世のものでない、霊的な美しさや儚さを持たせる。' },
+  { tag:'mysterious', jp:'神秘的', genre:'mood', strength:3, desc:'謎めいた、未知のものを感じさせる雰囲気。' },
+  { tag:'melancholic', jp:'メランコリック', genre:'mood', strength:4, desc:'哀愁・物悲しさを帯びた情感豊かな雰囲気。' },
+  { tag:'epic', jp:'壮大', genre:'mood', strength:4, desc:'スケールの大きな、圧倒的な迫力を持つ表現。' },
+  { tag:'serene', jp:'穏やか・静寂', genre:'mood', strength:3, desc:'心が落ち着く平和で静かな雰囲気。' },
+  { tag:'ominous', jp:'不穏・不吉', genre:'mood', strength:4, desc:'何か悪いことが起きそうな不穏な雰囲気。' },
+  { tag:'whimsical', jp:'気まぐれ・おとぎ話風', genre:'mood', strength:4, desc:'おとぎ話のような遊び心のある夢幻的な雰囲気。' },
+
+  // ── テクニック ──
+  { tag:'depth of field', jp:'被写界深度', genre:'technique', strength:3, desc:'前景と背景のボケ具合で立体感を生む表現技法。' },
+  { tag:'motion blur', jp:'モーションブラー', genre:'technique', strength:4, desc:'動きのある被写体に速度感のあるブレを加える。' },
+  { tag:'chromatic aberration', jp:'色収差', genre:'technique', strength:3, desc:'レンズの歪みで色がにじむローファイ・ヴィンテージ効果。' },
+  { tag:'lens flare', jp:'レンズフレア', genre:'technique', strength:4, desc:'強い光源がカメラに映り込む七色の放射状光。' },
+  { tag:'subsurface scattering', jp:'表面下散乱', genre:'technique', strength:4, desc:'皮膚や蝋など、光が内部で散乱するリアルな材質表現。' },
+  { tag:'ray tracing', jp:'レイトレーシング', genre:'technique', strength:4, desc:'物理的に正確な光の反射・屈折を計算したリアル描写。' },
+  { tag:'film grain', jp:'フィルム粒子', genre:'technique', strength:3, desc:'アナログフィルムのような粒状感のあるテクスチャ。' },
+  { tag:'double exposure', jp:'多重露光', genre:'technique', strength:5, desc:'2つの異なる映像を重ね合わせた芸術的な表現。' },
+  { tag:'tilt shift', jp:'チルトシフト', genre:'technique', strength:5, desc:'実物をミニチュアのように見せるジオラマ風写真効果。' },
+
+  // ── アーティスト ──
+  { tag:'by Studio Ghibli', jp:'スタジオジブリ風', genre:'artist', strength:5, desc:'ジブリ映画のような温かみのあるアニメ背景画タッチ。' },
+  { tag:'in the style of Monet', jp:'モネ風', genre:'artist', strength:5, desc:'印象派の巨匠モネの色彩と筆触を模倣した表現。' },
+  { tag:'Greg Rutkowski style', jp:'グレッグ・ルトコウスキー風', genre:'artist', strength:5, desc:'Artstation を席巻した現代ファンタジーアートの巨匠風。' },
+  { tag:'Alphonse Mucha style', jp:'ミュシャ風', genre:'artist', strength:5, desc:'アール・ヌーヴォーの装飾的で優雅な曲線美。' },
+  { tag:'HR Giger style', jp:'ギーガー風', genre:'artist', strength:5, desc:'エイリアンのデザイナーによるバイオメカニカルな暗黒美術。' },
+
+  // ── ネガティブ ──
+  { tag:'blurry', jp:'ぼやけた（除外）', genre:'negative', strength:5, desc:'ネガティブプロンプトで使用。画像のぼやけを防ぐ。' },
+  { tag:'deformed', jp:'変形・歪み（除外）', genre:'negative', strength:5, desc:'人体の不自然な変形・歪みを防ぐネガティブタグ。' },
+  { tag:'bad anatomy', jp:'解剖学的エラー（除外）', genre:'negative', strength:5, desc:'腕や指の数が狂うなどの解剖学的ミスを防ぐ。' },
+  { tag:'extra limbs', jp:'余分な手足（除外）', genre:'negative', strength:5, desc:'多すぎる手や腕の生成を抑制するネガティブタグ。' },
+  { tag:'low quality', jp:'低品質（除外）', genre:'negative', strength:4, desc:'低解像度や粗い描写を排除するネガティブタグ。' },
+  { tag:'watermark', jp:'透かし（除外）', genre:'negative', strength:4, desc:'画像内の透かしやロゴを除去するネガティブタグ。' },
+  { tag:'ugly', jp:'醜い（除外）', genre:'negative', strength:4, desc:'不快な外見の描写を抑制するネガティブタグ。' },
+
+  // ── 瞳・目 ──
+  { tag:'detailed eyes', jp:'精細な瞳', genre:'eyes', strength:5, desc:'虹彩・瞳孔・光の反射まで細かく描写させる最重要タグ。' },
+  { tag:'glowing eyes', jp:'発光する瞳', genre:'eyes', strength:5, desc:'神秘的・超常的な光を帯びた輝く瞳の表現。' },
+  { tag:'heterochromia', jp:'オッドアイ', genre:'eyes', strength:5, desc:'左右で異なる色の瞳を持つキャラクター。' },
+  { tag:'blue eyes', jp:'青い瞳', genre:'eyes', strength:3, desc:'クリアで透き通るような青色の瞳。' },
+  { tag:'amber eyes', jp:'琥珀色の瞳', genre:'eyes', strength:3, desc:'暖かみのある黄褐色・琥珀色の瞳。' },
+  { tag:'purple eyes', jp:'紫色の瞳', genre:'eyes', strength:4, desc:'神秘的な印象の紫・バイオレットの瞳。' },
+  { tag:'red eyes', jp:'赤い瞳', genre:'eyes', strength:4, desc:'悪役・吸血鬼・特殊キャラによく使われる赤い瞳。' },
+  { tag:'golden eyes', jp:'金色の瞳', genre:'eyes', strength:4, desc:'獣人・神・特別な存在を演出する金色の瞳。' },
+  { tag:'galaxy eyes', jp:'銀河の瞳', genre:'eyes', strength:5, desc:'瞳の中に星雲・宇宙が広がる幻想的な表現。' },
+  { tag:'cat eyes', jp:'猫目', genre:'eyes', strength:4, desc:'縦長の瞳孔を持つ猫のような切れ長の瞳。' },
+  { tag:'teary eyes', jp:'潤んだ瞳', genre:'eyes', strength:4, desc:'涙をたたえた潤んだ瞳の表現。感情的なシーンに有効。' },
+  { tag:'sharp eyes', jp:'鋭い目つき', genre:'eyes', strength:3, desc:'鋭く意志の強さを感じる目元の描写。' },
+  { tag:'long eyelashes', jp:'長いまつげ', genre:'eyes', strength:3, desc:'目元を際立てる長く美しいまつげ。' },
+  { tag:'sparkling eyes', jp:'キラキラした瞳', genre:'eyes', strength:4, desc:'光が反射してきらめく生き生きとした瞳。' },
+
+  // ── 髪 ──
+  { tag:'long flowing hair', jp:'長く流れる髪', genre:'hair', strength:4, desc:'風になびく長くしなやかな髪の毛の描写。' },
+  { tag:'short hair', jp:'ショートヘア', genre:'hair', strength:3, desc:'ショートカットのすっきりとした短い髪型。' },
+  { tag:'twin tails', jp:'ツインテール', genre:'hair', strength:5, desc:'左右に分けて束ねたツインテールスタイル。' },
+  { tag:'braided hair', jp:'三つ編み', genre:'hair', strength:4, desc:'編み込んだ三つ編みや複雑なブレイドスタイル。' },
+  { tag:'messy hair', jp:'乱れた髪', genre:'hair', strength:3, desc:'無造作で自然にほつれたラフな髪型。' },
+  { tag:'silver hair', jp:'銀髪', genre:'hair', strength:4, desc:'白銀に輝く幻想的・神秘的な印象の銀色の髪。' },
+  { tag:'gradient hair', jp:'グラデーションヘア', genre:'hair', strength:5, desc:'根元から毛先にかけて色が変わるインナーカラー・グラデ。' },
+  { tag:'colorful hair', jp:'カラフルな髪', genre:'hair', strength:4, desc:'複数の鮮やかな色を持つポップで個性的な髪。' },
+  { tag:'curly hair', jp:'巻き髪・くるくる', genre:'hair', strength:3, desc:'ウェーブやカールのかかった巻き髪スタイル。' },
+  { tag:'white hair', jp:'白髪', genre:'hair', strength:4, desc:'純白の髪。老人・神聖な存在・特別キャラに使われる。' },
+  { tag:'black hair', jp:'黒髪', genre:'hair', strength:2, desc:'つやのある深い黒色の髪。リアル系・和風キャラに多い。' },
+  { tag:'pink hair', jp:'ピンクヘア', genre:'hair', strength:3, desc:'かわいらしいピンク色の髪。ポップ・アニメキャラに人気。' },
+  { tag:'voluminous hair', jp:'ボリュームのある髪', genre:'hair', strength:3, desc:'豊かで存在感のある、ふんわりとしたボリュームヘア。' },
+  { tag:'wet hair', jp:'濡れた髪', genre:'hair', strength:4, desc:'水に濡れて束になった艶めかしい髪の表現。' },
+  { tag:'hair accessories', jp:'ヘアアクセサリー', genre:'hair', strength:3, desc:'リボン・ヘアピン・花飾りなどを添えた髪の描写。' },
+  { tag:'updo hairstyle', jp:'アップスタイル', genre:'hair', strength:3, desc:'髪をまとめて上に上げたエレガントなアップスタイル。' },
+
+  // ── 表情 ──
+  { tag:'expressionless', jp:'無表情', genre:'expression', strength:4, desc:'感情を表に出さないクールで無機質な顔の描写。' },
+  { tag:'gentle smile', jp:'穏やかな微笑み', genre:'expression', strength:3, desc:'口角がわずかに上がった優しく温かい微笑み。' },
+  { tag:'laughing', jp:'大笑い', genre:'expression', strength:3, desc:'口を開けて楽しそうに笑っている表情。' },
+  { tag:'crying', jp:'泣いている', genre:'expression', strength:4, desc:'涙を流して泣いている表情。感情的なシーンに。' },
+  { tag:'angry expression', jp:'怒り顔', genre:'expression', strength:4, desc:'眉を寄せ険しい表情をした怒りの顔。' },
+  { tag:'sad expression', jp:'悲しい表情', genre:'expression', strength:3, desc:'眉が下がり憂いを帯びた悲しみの表情。' },
+  { tag:'surprised expression', jp:'驚きの表情', genre:'expression', strength:3, desc:'目を見開き口を開けた驚きの顔。' },
+  { tag:'seductive look', jp:'色気のある表情', genre:'expression', strength:4, desc:'半目で見つめるような艶やかで魅惑的な目線。' },
+  { tag:'determined expression', jp:'決意の表情', genre:'expression', strength:4, desc:'強い意志と覚悟をにじませた凛とした顔。' },
+  { tag:'shy expression', jp:'恥ずかしそうな顔', genre:'expression', strength:3, desc:'頬を赤らめ目をそらした照れている表情。' },
+  { tag:'evil grin', jp:'悪の笑み', genre:'expression', strength:5, desc:'不気味で悪意に満ちたニヤリとした笑い。' },
+  { tag:'blushing', jp:'頬を赤らめる', genre:'expression', strength:3, desc:'恥ずかしさや照れから頬がピンクに染まった表情。' },
+  { tag:'pout', jp:'ふくれっ面', genre:'expression', strength:3, desc:'唇を尖らせた可愛らしいふくれっ面の表情。' },
+  { tag:'stoic face', jp:'ストイックな表情', genre:'expression', strength:3, desc:'感情を押し殺した凛とした無愛想な顔つき。' },
+
+  // ── メイク ──
+  { tag:'heavy makeup', jp:'濃いメイク', genre:'makeup', strength:4, desc:'アイシャドウ・リップ・ファンデを全面に効かせた濃厚メイク。' },
+  { tag:'natural makeup', jp:'ナチュラルメイク', genre:'makeup', strength:3, desc:'素肌に近い自然で透明感のある薄いメイク。' },
+  { tag:'red lipstick', jp:'赤いリップ', genre:'makeup', strength:4, desc:'クラシックでセクシーな鮮やかな赤のリップカラー。' },
+  { tag:'dark lipstick', jp:'ダークリップ', genre:'makeup', strength:4, desc:'ゴシック・ハロウィン系の黒・深紅・ダークパープルの唇。' },
+  { tag:'smoky eye makeup', jp:'スモーキーアイ', genre:'makeup', strength:5, desc:'アイシャドウをぼかしてセクシーに仕上げるスモーキーアイ。' },
+  { tag:'glitter makeup', jp:'グリッターメイク', genre:'makeup', strength:5, desc:'ラメやグリッターをまとった煌びやかなメイク。' },
+  { tag:'bold eyeliner', jp:'太いアイライン', genre:'makeup', strength:3, desc:'目元を強調するはっきりとした太めのアイライナー。' },
+  { tag:'cat eye makeup', jp:'キャットアイメイク', genre:'makeup', strength:4, desc:'目尻をはねあげたフェライン・キャットアイのアイライン。' },
+  { tag:'gothic makeup', jp:'ゴシックメイク', genre:'makeup', strength:5, desc:'黒・赤・ダーク系でまとめた退廃的なゴシックメイク。' },
+  { tag:'blush on cheeks', jp:'チーク', genre:'makeup', strength:3, desc:'頬にふんわり乗せたピンク・コーラルのチークカラー。' },
+  { tag:'freckles', jp:'そばかす', genre:'makeup', strength:3, desc:'鼻や頬に散らばったそばかすで自然な愛らしさを加える。' },
+  { tag:'face paint', jp:'フェイスペイント', genre:'makeup', strength:5, desc:'顔にペインティングを施した祭り・戦士・芸術的な表現。' },
+  { tag:'futuristic makeup', jp:'未来的なメイク', genre:'makeup', strength:5, desc:'SF・サイバーパンク系の幾何学模様を取り入れたメイク。' },
+
+  // ── 服装 ──
+  { tag:'school uniform', jp:'制服', genre:'outfit', strength:4, desc:'日本のセーラー服・ブレザーなど学校の制服スタイル。' },
+  { tag:'maid outfit', jp:'メイド服', genre:'outfit', strength:5, desc:'フリルとエプロンが特徴的なクラシックなメイド服。' },
+  { tag:'kimono', jp:'着物', genre:'outfit', strength:5, desc:'日本の伝統的な和服・着物。帯や柄も描写される。' },
+  { tag:'wedding dress', jp:'ウェディングドレス', genre:'outfit', strength:4, desc:'白いレースや絹で作られた美しいウエディングドレス。' },
+  { tag:'armor', jp:'鎧', genre:'outfit', strength:4, desc:'金属製の西洋甲冑や和風の鎧武者スタイル。' },
+  { tag:'gothic lolita dress', jp:'ゴシックロリータ', genre:'outfit', strength:5, desc:'黒いレース・フリル・リボンが豊富なゴスロリファッション。' },
+  { tag:'casual clothes', jp:'カジュアルウェア', genre:'outfit', strength:2, desc:'Tシャツ・ジーンズなどの日常的なカジュアルな服装。' },
+  { tag:'business suit', jp:'スーツ', genre:'outfit', strength:3, desc:'ビジネス向けのフォーマルなスーツスタイル。' },
+  { tag:'military uniform', jp:'軍服', genre:'outfit', strength:4, desc:'勲章や肩章を備えた格式ある軍事制服。' },
+  { tag:'sportswear', jp:'スポーツウェア', genre:'outfit', strength:3, desc:'運動・スポーツシーン向けの機能的なウェア。' },
+  { tag:'cyberpunk outfit', jp:'サイバーパンク衣装', genre:'outfit', strength:5, desc:'LED・チューブ・ハーネスなどを組み合わせた未来的衣装。' },
+  { tag:'fantasy armor', jp:'ファンタジー鎧', genre:'outfit', strength:5, desc:'魔法陣や宝石で装飾されたRPG風の幻想的な鎧。' },
+  { tag:'witch costume', jp:'魔女衣装', genre:'outfit', strength:4, desc:'黒いローブ・三角帽子・マントを組み合わせた魔女スタイル。' },
+  { tag:'ninja outfit', jp:'忍者装束', genre:'outfit', strength:5, desc:'黒装束に手裏剣・覆面などを備えた忍者スタイル。' },
+  { tag:'swimsuit', jp:'水着', genre:'outfit', strength:3, desc:'ビーチ・プール向けの水着スタイル。' },
+  { tag:'hoodie', jp:'パーカー', genre:'outfit', strength:2, desc:'ジップアップまたはプルオーバーのカジュアルなパーカー。' },
+  { tag:'off-shoulder dress', jp:'オフショルダードレス', genre:'outfit', strength:3, desc:'肩を露出したエレガントなオフショルダーのドレス。' },
+  { tag:'trench coat', jp:'トレンチコート', genre:'outfit', strength:3, desc:'ベルト付きの長めのトレンチコート。知的な印象を与える。' },
+  { tag:'fur coat', jp:'ファーコート', genre:'outfit', strength:4, desc:'ふわふわした毛皮素材のゴージャスなコート。' },
+  { tag:'yukata', jp:'浴衣', genre:'outfit', strength:4, desc:'夏祭り・花火大会などに着る軽やかな浴衣スタイル。' },
+];
+
+// 状態
+let activeGenre = 'all';
+let searchQuery = '';
+let sortKey = 'default';
+let isListView = false;
+
+// 初期化
+function init() {
+  document.getElementById('totalCount').textContent = DATA.length;
+  document.getElementById('genreCount').textContent = Object.keys(GENRES).length;
+  buildGenreBar();
+  render();
+}
+
+function buildGenreBar() {
+  const bar = document.getElementById('genreBar');
+  bar.innerHTML = '';
+
+  const all = document.createElement('button');
+  all.className = 'genre-btn active';
+  all.dataset.genre = 'all';
+  all.innerHTML = `<span class="genre-dot"></span> すべて (${DATA.length})`;
+  all.onclick = () => setGenre('all');
+  bar.appendChild(all);
+
+  for (const [key, g] of Object.entries(GENRES)) {
+    const count = DATA.filter(d => d.genre === key).length;
+    const btn = document.createElement('button');
+    btn.className = 'genre-btn';
+    btn.dataset.genre = key;
+    btn.innerHTML = `<span class="genre-dot"></span> ${g.icon} ${g.label} (${count})`;
+    btn.onclick = () => setGenre(key);
+    bar.appendChild(btn);
+  }
+}
+
+function setGenre(genre) {
+  activeGenre = genre;
+  document.querySelectorAll('.genre-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.genre === genre);
+  });
+  render();
+}
+
+function getFiltered() {
+  let d = [...DATA];
+  if (activeGenre !== 'all') d = d.filter(x => x.genre === activeGenre);
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    d = d.filter(x =>
+      x.tag.toLowerCase().includes(q) ||
+      x.jp.includes(q) ||
+      (x.desc && x.desc.includes(q))
+    );
+  }
+  switch (sortKey) {
+    case 'az': d.sort((a, b) => a.tag.localeCompare(b.tag)); break;
+    case 'za': d.sort((a, b) => b.tag.localeCompare(a.tag)); break;
+    case 'jp': d.sort((a, b) => a.jp.localeCompare(b.jp, 'ja')); break;
+    case 'strength': d.sort((a, b) => b.strength - a.strength); break;
+    case 'genre': d.sort((a, b) => a.genre.localeCompare(b.genre)); break;
+  }
+  return d;
+}
+
+function render() {
+  const filtered = getFiltered();
+  const grid = document.getElementById('grid');
+  document.getElementById('resultNum').textContent = filtered.length;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">⊘</div><div class="empty-text">該当するタグが見つかりませんでした</div></div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map((d, i) => {
+    const g = GENRES[d.genre];
+    const strCls = d.strength >= 4 ? 'str-high' : d.strength >= 3 ? 'str-mid' : 'str-low';
+    const strW = (d.strength / 5 * 100) + '%';
+    const delay = Math.min(i * 30, 300);
+    const inList = myList.includes(d.tag);
+    const safeTag = d.tag.replace(/'/g, "\\'");
+    return `
+    <div class="card" style="animation-delay:${delay}ms">
+      <div class="card-top">
+        <span class="genre-badge ${g.cls}">${g.icon} ${g.label}</span>
+        <div class="card-buttons">
+          <button class="add-btn${inList?' added':''}" title="マイリストに追加" onclick="toggleMylist(event,'${safeTag}')">${inList?'✓':'+'}</button>
+          <button class="copy-btn" onclick="copyTag(event, '${safeTag}')">⎘</button>
+        </div>
+      </div>
+      <div class="card-tag">${d.tag}</div>
+      <div class="card-jp">${d.jp}</div>
+      ${d.desc ? `<div class="card-desc">${d.desc}</div>` : ''}
+      <div class="card-meta">
+        <span class="strength-label">効果 ${d.strength}/5</span>
+        <div class="strength-bar"><div class="strength-fill ${strCls}" style="width:${strW}"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function copyTag(e, tag) {
+  e.stopPropagation();
+  navigator.clipboard.writeText(tag).then(() => {
+    const btn = e.currentTarget;
+    btn.classList.add('copied');
+    btn.textContent = '✓';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = '⎘'; }, 1500);
+
+    const toast = document.getElementById('toast');
+    toast.innerHTML = `✓ コピー: <strong>${tag}</strong>`;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  });
+}
+
+// イベント
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchQuery = e.target.value.trim();
+  render();
+});
+
+document.getElementById('sortSelect').addEventListener('change', e => {
+  sortKey = e.target.value;
+  render();
+});
+
+document.getElementById('gridViewBtn').addEventListener('click', () => {
+  isListView = false;
+  document.getElementById('grid').classList.remove('list-view');
+  document.getElementById('gridViewBtn').classList.add('active');
+  document.getElementById('listViewBtn').classList.remove('active');
+});
+
+document.getElementById('listViewBtn').addEventListener('click', () => {
+  isListView = true;
+  document.getElementById('grid').classList.add('list-view');
+  document.getElementById('listViewBtn').classList.add('active');
+  document.getElementById('gridViewBtn').classList.remove('active');
+});
+
+// ─── マイリスト ───
+let myList = [];
+
+function toggleMylist(e, tag) {
+  e.stopPropagation();
+  const idx = myList.indexOf(tag);
+  if (idx === -1) {
+    myList.push(tag);
+  } else {
+    myList.splice(idx, 1);
+  }
+  renderMylist();
+  render();
+  // パネルを開く（追加時）
+  if (idx === -1) {
+    const panel = document.getElementById('mylistPanel');
+    if (!panel.classList.contains('open')) {
+      panel.classList.add('open');
+    }
+  }
+}
+
+function renderMylist() {
+  const badge = document.getElementById('mylistBadge');
+  const empty = document.getElementById('mylistEmpty');
+  const tagsEl = document.getElementById('mylistTags');
+  const promptBox = document.getElementById('mylistPromptBox');
+
+  badge.textContent = myList.length;
+  // バンプアニメ
+  badge.classList.remove('bump');
+  void badge.offsetWidth;
+  badge.classList.add('bump');
+  setTimeout(() => badge.classList.remove('bump'), 300);
+
+  if (myList.length === 0) {
+    empty.style.display = 'block';
+    tagsEl.style.display = 'none';
+    promptBox.style.display = 'none';
+    return;
+  }
+
+  empty.style.display = 'none';
+  tagsEl.style.display = 'flex';
+  promptBox.style.display = 'block';
+
+  // プロンプトプレビュー
+  promptBox.innerHTML = myList.map((t, i) =>
+    `<span class="prompt-tag">${t}</span>${i < myList.length-1 ? '<span class="prompt-comma">, </span>' : ''}`
+  ).join('');
+
+  // チップ
+  tagsEl.innerHTML = myList.map(t => `
+    <div class="mylist-tag-chip">
+      <span>${t}</span>
+      <button class="chip-remove" onclick="removeFromMylist('${t.replace(/'/g,"\\'")}')">×</button>
+    </div>
+  `).join('');
+}
+
+function removeFromMylist(tag) {
+  myList = myList.filter(t => t !== tag);
+  renderMylist();
+  render();
+}
+
+function clearMylist(e) {
+  e.stopPropagation();
+  if (myList.length === 0) return;
+  myList = [];
+  renderMylist();
+  render();
+}
+
+function copyAllTags(e) {
+  e.stopPropagation();
+  if (myList.length === 0) return;
+  const text = myList.join(', ');
+  navigator.clipboard.writeText(text).then(() => {
+    const toast = document.getElementById('toast');
+    toast.innerHTML = `✓ ${myList.length}件のタグをコピーしました`;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  });
+}
+
+// パネル開閉
+document.getElementById('mylistHandle').addEventListener('click', () => {
+  document.getElementById('mylistPanel').classList.toggle('open');
+});
+
+// ページ下部のパディング調整（パネルが被らないように）
+function adjustBodyPadding() {
+  document.querySelector('.main').style.paddingBottom =
+    document.getElementById('mylistPanel').classList.contains('open') ? '300px' : '80px';
+}
+document.getElementById('mylistHandle').addEventListener('click', () => {
+  setTimeout(adjustBodyPadding, 360);
+});
+
+// ─── シャッフル ───
+let shuffleResults = [];
+let shuffleGenreFilter = 'all';
+
+function openShuffle() {
+  buildShuffleGenreFilter();
+  doShuffle();
+  document.getElementById('shuffleOverlay').classList.add('show');
+}
+
+function closeShuffle() {
+  document.getElementById('shuffleOverlay').classList.remove('show');
+}
+
+function buildShuffleGenreFilter() {
+  const el = document.getElementById('shuffleGenreFilter');
+  el.innerHTML = `<span class="shuffle-genre-chip active" data-g="all" onclick="setShuffleGenre('all')">すべて</span>` +
+    Object.entries(GENRES).map(([key, g]) =>
+      `<span class="shuffle-genre-chip" data-g="${key}" onclick="setShuffleGenre('${key}')">${g.icon} ${g.label}</span>`
+    ).join('');
+}
+
+function setShuffleGenre(genre) {
+  shuffleGenreFilter = genre;
+  document.querySelectorAll('.shuffle-genre-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.g === genre);
+  });
+  doShuffle();
+}
+
+function doShuffle() {
+  const count = Math.min(Math.max(parseInt(document.getElementById('shuffleCountInput').value) || 5, 1), 20);
+  let pool = [...DATA];
+  if (shuffleGenreFilter !== 'all') pool = pool.filter(d => d.genre === shuffleGenreFilter);
+  // Fisher-Yates シャッフル
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  shuffleResults = pool.slice(0, count);
+  renderShuffleResults();
+
+  // スピンアニメ
+  const btn = document.getElementById('shuffleRerollBtn');
+  btn.classList.remove('spinning');
+  void btn.offsetWidth;
+  btn.classList.add('spinning');
+}
+
+function renderShuffleResults() {
+  const grid = document.getElementById('shuffleResultGrid');
+  grid.innerHTML = shuffleResults.map((d, i) => {
+    const g = GENRES[d.genre];
+    const inList = myList.includes(d.tag);
+    const safeTag = d.tag.replace(/'/g, "\\'");
+    return `
+    <div class="shuffle-card" style="animation-delay:${i * 50}ms">
+      <span class="genre-badge ${g.cls}" style="font-size:10px;margin-bottom:8px;display:inline-block">${g.icon} ${g.label}</span>
+      <div class="shuffle-card-tag">${d.tag}</div>
+      <div class="shuffle-card-jp">${d.jp}</div>
+      <div class="shuffle-card-actions">
+        <button class="shuffle-card-add${inList?' added':''}" onclick="shuffleToggleMylist(this,'${safeTag}')">
+          ${inList ? '✓ 追加済み' : '＋ マイリストへ'}
+        </button>
+        <button class="shuffle-card-copy" onclick="shuffleCopyOne(event,'${safeTag}')">⎘</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function shuffleToggleMylist(btn, tag) {
+  const idx = myList.indexOf(tag);
+  if (idx === -1) {
+    myList.push(tag);
+    btn.classList.add('added');
+    btn.textContent = '✓ 追加済み';
+  } else {
+    myList.splice(idx, 1);
+    btn.classList.remove('added');
+    btn.textContent = '＋ マイリストへ';
+  }
+  renderMylist();
+  render();
+}
+
+function shuffleCopyOne(e, tag) {
+  e.stopPropagation();
+  navigator.clipboard.writeText(tag).then(() => {
+    const toast = document.getElementById('toast');
+    toast.innerHTML = `✓ コピー: <strong>${tag}</strong>`;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  });
+}
+
+document.getElementById('shuffleOpenBtn').addEventListener('click', openShuffle);
+document.getElementById('shuffleCloseBtn').addEventListener('click', closeShuffle);
+document.getElementById('shuffleOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('shuffleOverlay')) closeShuffle();
+});
+document.getElementById('shuffleRerollBtn').addEventListener('click', doShuffle);
+document.getElementById('shuffleCountInput').addEventListener('change', doShuffle);
+
+document.getElementById('shuffleAllAddBtn').addEventListener('click', () => {
+  shuffleResults.forEach(d => { if (!myList.includes(d.tag)) myList.push(d.tag); });
+  renderMylist();
+  renderShuffleResults();
+  render();
+  const toast = document.getElementById('toast');
+  toast.innerHTML = `✓ ${shuffleResults.length}件をマイリストに追加しました`;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+});
+
+document.getElementById('shuffleAllCopyBtn').addEventListener('click', () => {
+  const text = shuffleResults.map(d => d.tag).join(', ');
+  navigator.clipboard.writeText(text).then(() => {
+    const toast = document.getElementById('toast');
+    toast.innerHTML = `✓ ${shuffleResults.length}件のタグをコピーしました`;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  });
+});
+
+// キーボードで閉じる
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeShuffle();
+});
+
+init();
+</script>
+</body>
+</html>
